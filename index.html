@@ -18,13 +18,14 @@
             <nav class="nav">
                 <button class="nav-btn active" data-filter="all">전체</button>
                 <button class="nav-btn" data-filter="hashtag">해시태그 검색</button>
+                <button id="ownerModeBtn" class="nav-btn" title="소유자만 편집 가능 토글">소유자 모드</button>
             </nav>
         </div>
     </header>
 
     <main class="main">
         <div class="container">
-            <div class="add-post-section">
+            <div class="add-post-section" id="addPostSection">
                 <button class="add-post-btn" onclick="toggleAddPost()">
                     <i class="fas fa-plus"></i>
                     새 학습 내용 추가

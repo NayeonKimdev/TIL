@@ -3,12 +3,15 @@ let posts = JSON.parse(localStorage.getItem('til_posts')) || [];
 let currentFilter = 'all';
 let hashtags = [];
 let imageDescriptions = {};
+let uploadedImages = []; // 업로드된 이미지 배열
+let ownerMode = JSON.parse(localStorage.getItem('til_owner_mode')) ?? false;
 
 // DOM이 로드되면 실행
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     renderPosts();
+    updateOwnerModeUI();
 });
 
 // 앱 초기화
@@ -37,6 +40,9 @@ function setupEventListeners() {
     
     // 해시태그 입력 이벤트
     document.getElementById('hashtagInput').addEventListener('keydown', handleHashtagInput);
+
+    // 소유자 모드 토글
+    document.getElementById('ownerModeBtn').addEventListener('click', toggleOwnerMode);
 }
 
 // 샘플 데이터 추가 (Video 카드만 유지)
@@ -95,6 +101,11 @@ function removeHashtag(tag) {
 
 // 폼 토글 함수
 function toggleAddPost() {
+    if (!ownerMode) {
+        showNotification('소유자 모드에서만 등록할 수 있습니다', 'info');
+        return;
+    }
+
     const form = document.getElementById('addPostForm');
     const isVisible = form.style.display !== 'none';
     
@@ -104,6 +115,7 @@ function toggleAddPost() {
         document.getElementById('imagePreview').innerHTML = '';
         hashtags = [];
         imageDescriptions = {};
+        uploadedImages = []; // 이미지 배열 초기화
         renderHashtags();
     } else {
         form.style.display = 'block';
@@ -119,33 +131,44 @@ function handleFormSubmit(e) {
     const title = formData.get('title');
     const date = formData.get('date');
     const content = formData.get('content');
-    
-    // 이미지 파일 처리
-    const imageFiles = document.getElementById('images').files;
-    const images = [];
-    
-    for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const imageData = {
-                src: e.target.result,
-                description: imageDescriptions[i] || ''
+
+    // 업로드된 이미지들로 포스트 저장
+    const images = uploadedImages.map((img, index) => ({
+        src: img.src,
+        description: imageDescriptions[index] || ''
+    }));
+
+    // 수정 모드인지 여부 확인
+    const editingId = e.target.getAttribute('data-editing-id');
+    if (editingId) {
+        const postIdx = posts.findIndex(p => String(p.id) === editingId);
+        if (postIdx !== -1) {
+            posts[postIdx] = {
+                ...posts[postIdx],
+                title,
+                hashtags: [...hashtags],
+                date,
+                content,
+                images
             };
-            images.push(imageData);
-            
-            // 모든 이미지가 로드되면 포스트 저장
-            if (images.length === imageFiles.length) {
-                savePost(title, date, content, images);
-            }
-        };
-        reader.readAsDataURL(file);
-    }
-    
-    // 이미지가 없는 경우 바로 저장
-    if (imageFiles.length === 0) {
+        }
+        e.target.removeAttribute('data-editing-id');
+        showNotification('수정이 완료되었습니다', 'success');
+    } else {
         savePost(title, date, content, images);
+        return;
     }
+
+    // 공통 마무리
+    savePosts();
+    renderPosts();
+    document.getElementById('postForm').reset();
+    document.getElementById('imagePreview').innerHTML = '';
+    hashtags = [];
+    imageDescriptions = {};
+    uploadedImages = [];
+    renderHashtags();
+    toggleAddPost();
 }
 
 // 포스트 저장
@@ -168,6 +191,7 @@ function savePost(title, date, content, images) {
     document.getElementById('imagePreview').innerHTML = '';
     hashtags = [];
     imageDescriptions = {};
+    uploadedImages = []; // 이미지 배열 초기화
     renderHashtags();
     toggleAddPost();
     
@@ -177,30 +201,153 @@ function savePost(title, date, content, images) {
 
 // 이미지 미리보기 처리
 function handleImagePreview(e) {
-    const preview = document.getElementById('imagePreview');
-    preview.innerHTML = '';
-    
     const files = e.target.files;
     
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const reader = new FileReader();
         reader.onload = function(e) {
-            const imageItem = document.createElement('div');
-            imageItem.className = 'image-preview-item';
-            imageItem.innerHTML = `
-                <img src="${e.target.result}" alt="${file.name}">
-                <div class="image-description-input">
-                    <textarea 
-                        placeholder="이 이미지에 대한 설명을 입력하세요..."
-                        onchange="updateImageDescription(${i}, this.value)"
-                    >${imageDescriptions[i] || ''}</textarea>
-                </div>
-            `;
-            preview.appendChild(imageItem);
+            const imageData = {
+                src: e.target.result,
+                file: file,
+                index: uploadedImages.length
+            };
+            uploadedImages.push(imageData);
+            renderImagePreview();
         };
         reader.readAsDataURL(file);
     }
+}
+
+// 이미지 미리보기 렌더링
+function renderImagePreview() {
+    const preview = document.getElementById('imagePreview');
+    preview.innerHTML = '';
+    
+    uploadedImages.forEach((imageData, index) => {
+        const imageItem = document.createElement('div');
+        imageItem.className = 'image-preview-item';
+        imageItem.draggable = true;
+        imageItem.dataset.index = index;
+        
+        imageItem.innerHTML = `
+            <div class="image-order">${index + 1}</div>
+            <button class="image-delete-btn" onclick="deleteImage(${index})">&times;</button>
+            <img src="${imageData.src}" alt="업로드된 이미지 ${index + 1}">
+            <div class="drag-hint">드래그하여 순서 변경</div>
+            <div class="image-description-input">
+                <textarea 
+                    placeholder="이 이미지에 대한 설명을 입력하세요..."
+                    onchange="updateImageDescription(${index}, this.value)"
+                >${imageDescriptions[index] || ''}</textarea>
+            </div>
+        `;
+        
+        // 드래그 앤 드롭 이벤트 추가
+        setupDragAndDrop(imageItem, index);
+        
+        preview.appendChild(imageItem);
+    });
+}
+
+// 드래그 앤 드롭 설정
+function setupDragAndDrop(element, index) {
+    element.addEventListener('dragstart', function(e) {
+        this.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', index);
+    });
+    
+    element.addEventListener('dragend', function() {
+        this.classList.remove('dragging');
+    });
+    
+    element.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('drag-over');
+    });
+    
+    element.addEventListener('dragleave', function() {
+        this.classList.remove('drag-over');
+    });
+    
+    element.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        
+        const draggedIndex = parseInt(e.dataTransfer.getData('text/plain'));
+        const dropIndex = parseInt(this.dataset.index);
+        
+        if (draggedIndex !== dropIndex) {
+            reorderImages(draggedIndex, dropIndex);
+        }
+    });
+}
+
+// 이미지 순서 변경
+function reorderImages(fromIndex, toIndex) {
+    // 배열에서 이미지 이동
+    const [movedImage] = uploadedImages.splice(fromIndex, 1);
+    uploadedImages.splice(toIndex, 0, movedImage);
+    
+    // 설명도 함께 이동
+    const movedDescription = imageDescriptions[fromIndex];
+    delete imageDescriptions[fromIndex];
+    
+    // 인덱스 재정렬
+    const newDescriptions = {};
+    Object.keys(imageDescriptions).forEach(key => {
+        const oldIndex = parseInt(key);
+        let newIndex = oldIndex;
+        
+        if (oldIndex >= fromIndex && oldIndex < toIndex) {
+            newIndex = oldIndex + 1;
+        } else if (oldIndex > toIndex && oldIndex <= fromIndex) {
+            newIndex = oldIndex - 1;
+        }
+        
+        newDescriptions[newIndex] = imageDescriptions[key];
+    });
+    
+    if (movedDescription) {
+        newDescriptions[toIndex] = movedDescription;
+    }
+    
+    imageDescriptions = newDescriptions;
+    
+    // 미리보기 다시 렌더링
+    renderImagePreview();
+}
+
+// 이미지 삭제
+function deleteImage(index) {
+    // 확인 메시지
+    if (!confirm('이 이미지를 삭제하시겠습니까?')) {
+        return;
+    }
+    
+    // 배열에서 이미지 제거
+    uploadedImages.splice(index, 1);
+    
+    // 설명도 함께 제거
+    delete imageDescriptions[index];
+    
+    // 인덱스 재정렬
+    const newDescriptions = {};
+    Object.keys(imageDescriptions).forEach(key => {
+        const oldIndex = parseInt(key);
+        if (oldIndex > index) {
+            newDescriptions[oldIndex - 1] = imageDescriptions[key];
+        } else if (oldIndex < index) {
+            newDescriptions[oldIndex] = imageDescriptions[key];
+        }
+    });
+    imageDescriptions = newDescriptions;
+    
+    // 미리보기 다시 렌더링
+    renderImagePreview();
+    
+    // 파일 입력 초기화
+    document.getElementById('images').value = '';
 }
 
 // 이미지 설명 업데이트
@@ -272,6 +419,13 @@ function createPostHTML(post) {
                 `).join('')}
             </div>
         ` : '';
+
+    const actionsHTML = ownerMode ? `
+        <div class="post-actions">
+            <button class="btn btn-edit" onclick="startEditPost(${post.id})">수정</button>
+            <button class="btn btn-delete" onclick="deletePost(${post.id})">삭제</button>
+        </div>
+    ` : '';
     
     const imagesHTML = post.images.length > 0 
         ? `
@@ -291,6 +445,7 @@ function createPostHTML(post) {
                     <span class="post-date">${formatDate(post.date)}</span>
                 </div>
                 ${hashtagsHTML}
+                ${actionsHTML}
             </div>
             <div class="post-content">
                 <p class="post-description">${post.content}</p>
@@ -460,3 +615,82 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// ========== 소유자 모드 ==========
+function toggleOwnerMode() {
+    // 간단 비밀번호 프롬프트 (프론트엔드 보호)
+    if (!ownerMode) {
+        const pwd = prompt('소유자 비밀번호를 입력하세요 (브라우저에만 저장됩니다)');
+        if (!pwd) return;
+        // 해시 대체 간단 저장
+        localStorage.setItem('til_owner_pwd', btoa(pwd));
+        ownerMode = true;
+    } else {
+        ownerMode = false;
+    }
+    localStorage.setItem('til_owner_mode', JSON.stringify(ownerMode));
+    updateOwnerModeUI();
+    renderPosts();
+}
+
+function updateOwnerModeUI() {
+    const btn = document.getElementById('ownerModeBtn');
+    const addSection = document.getElementById('addPostSection');
+    if (!btn || !addSection) return;
+    
+    if (ownerMode) {
+        btn.classList.add('owner-on');
+        addSection.style.display = 'block';
+    } else {
+        btn.classList.remove('owner-on');
+        addSection.style.display = 'none';
+        const form = document.getElementById('addPostForm');
+        if (form && form.style.display !== 'none') toggleAddPost();
+    }
+}
+
+// ========== 글 수정/삭제 ==========
+function startEditPost(postId) {
+    if (!ownerMode) {
+        showNotification('소유자 모드에서만 수정할 수 있습니다', 'info');
+        return;
+    }
+    
+    const post = posts.find(p => p.id === postId);
+    if (!post) return;
+    
+    // 폼에 값 채우기
+    document.getElementById('title').value = post.title;
+    document.getElementById('date').value = post.date;
+    document.getElementById('content').value = post.content;
+    hashtags = [...post.hashtags];
+    renderHashtags();
+    
+    // 이미지 채우기
+    uploadedImages = post.images.map(img => ({ src: img.src }));
+    imageDescriptions = {};
+    post.images.forEach((img, idx) => imageDescriptions[idx] = img.description || '');
+    renderImagePreview();
+    
+    // 편집 모드 표시
+    const form = document.getElementById('postForm');
+    form.setAttribute('data-editing-id', String(post.id));
+    
+    // 폼 열기
+    const addForm = document.getElementById('addPostForm');
+    if (addForm.style.display === 'none') toggleAddPost();
+    addForm.scrollIntoView({ behavior: 'smooth' });
+}
+
+function deletePost(postId) {
+    if (!ownerMode) {
+        showNotification('소유자 모드에서만 삭제할 수 있습니다', 'info');
+        return;
+    }
+    
+    if (!confirm('이 글을 삭제하시겠습니까?')) return;
+    posts = posts.filter(p => p.id !== postId);
+    savePosts();
+    renderPosts();
+    showNotification('삭제가 완료되었습니다', 'success');
+}
