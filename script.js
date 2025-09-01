@@ -1,6 +1,8 @@
 // 전역 변수
 let posts = JSON.parse(localStorage.getItem('til_posts')) || [];
 let currentFilter = 'all';
+let hashtags = [];
+let imageDescriptions = {};
 
 // DOM이 로드되면 실행
 document.addEventListener('DOMContentLoaded', function() {
@@ -32,49 +34,63 @@ function setupEventListeners() {
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', handleFilterClick);
     });
+    
+    // 해시태그 입력 이벤트
+    document.getElementById('hashtagInput').addEventListener('keydown', handleHashtagInput);
 }
 
-// 샘플 데이터 추가
+// 샘플 데이터 추가 (Video 카드만 유지)
 function addSampleData() {
     const samplePosts = [
         {
             id: 1,
-            title: 'React Hooks 완벽 가이드',
-            category: 'frontend',
+            title: 'Video 카드 예시',
+            hashtags: ['video', 'example', 'sample'],
             date: '2024-01-15',
-            content: '오늘 React Hooks에 대해 깊이 있게 학습했습니다. useState, useEffect, useContext, useReducer 등 다양한 훅들의 사용법과 실제 프로젝트에서의 활용 방법을 배웠습니다. 특히 커스텀 훅을 만드는 방법과 훅의 규칙에 대해 중점적으로 공부했습니다.',
+            content: '이것은 Video 카드의 예시입니다. 실제 학습 내용으로 교체해주세요.',
             images: [
-                'https://via.placeholder.com/400x300/667eea/ffffff?text=React+Hooks',
-                'https://via.placeholder.com/400x300/764ba2/ffffff?text=useState+Example',
-                'https://via.placeholder.com/400x300/667eea/ffffff?text=useEffect+Example'
-            ]
-        },
-        {
-            id: 2,
-            title: 'Node.js Express 서버 구축',
-            category: 'backend',
-            date: '2024-01-14',
-            content: 'Node.js와 Express를 사용해서 RESTful API 서버를 구축하는 방법을 학습했습니다. 미들웨어 설정, 라우팅, 에러 핸들링, 데이터베이스 연결 등 백엔드 개발의 핵심 개념들을 실습을 통해 익혔습니다.',
-            images: [
-                'https://via.placeholder.com/400x300/764ba2/ffffff?text=Node.js+Server',
-                'https://via.placeholder.com/400x300/667eea/ffffff?text=Express+API'
-            ]
-        },
-        {
-            id: 3,
-            title: '이진 탐색 트리 구현',
-            category: 'algorithm',
-            date: '2024-01-13',
-            content: '이진 탐색 트리(Binary Search Tree)의 개념과 구현 방법을 학습했습니다. 삽입, 삭제, 검색 연산의 시간 복잡도와 균형 잡힌 트리의 중요성에 대해 이해했습니다.',
-            images: [
-                'https://via.placeholder.com/400x300/667eea/ffffff?text=Binary+Search+Tree',
-                'https://via.placeholder.com/400x300/764ba2/ffffff?text=Tree+Traversal'
+                {
+                    src: 'https://via.placeholder.com/400x300/8a2be2/ffffff?text=Video+Example',
+                    description: 'Video 카드 예시 이미지입니다.'
+                }
             ]
         }
     ];
     
     posts = samplePosts;
     savePosts();
+}
+
+// 해시태그 입력 처리
+function handleHashtagInput(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const input = e.target;
+        const hashtag = input.value.trim();
+        
+        if (hashtag && !hashtags.includes(hashtag)) {
+            hashtags.push(hashtag);
+            renderHashtags();
+            input.value = '';
+        }
+    }
+}
+
+// 해시태그 렌더링
+function renderHashtags() {
+    const container = document.getElementById('hashtagContainer');
+    container.innerHTML = hashtags.map(tag => `
+        <span class="hashtag">
+            ${tag}
+            <button class="hashtag-remove" onclick="removeHashtag('${tag}')">&times;</button>
+        </span>
+    `).join('');
+}
+
+// 해시태그 제거
+function removeHashtag(tag) {
+    hashtags = hashtags.filter(t => t !== tag);
+    renderHashtags();
 }
 
 // 폼 토글 함수
@@ -86,6 +102,9 @@ function toggleAddPost() {
         form.style.display = 'none';
         document.getElementById('postForm').reset();
         document.getElementById('imagePreview').innerHTML = '';
+        hashtags = [];
+        imageDescriptions = {};
+        renderHashtags();
     } else {
         form.style.display = 'block';
         form.scrollIntoView({ behavior: 'smooth' });
@@ -98,7 +117,6 @@ function handleFormSubmit(e) {
     
     const formData = new FormData(e.target);
     const title = formData.get('title');
-    const category = formData.get('category');
     const date = formData.get('date');
     const content = formData.get('content');
     
@@ -106,14 +124,19 @@ function handleFormSubmit(e) {
     const imageFiles = document.getElementById('images').files;
     const images = [];
     
-    for (let file of imageFiles) {
+    for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
         const reader = new FileReader();
         reader.onload = function(e) {
-            images.push(e.target.result);
+            const imageData = {
+                src: e.target.result,
+                description: imageDescriptions[i] || ''
+            };
+            images.push(imageData);
             
             // 모든 이미지가 로드되면 포스트 저장
             if (images.length === imageFiles.length) {
-                savePost(title, category, date, content, images);
+                savePost(title, date, content, images);
             }
         };
         reader.readAsDataURL(file);
@@ -121,16 +144,16 @@ function handleFormSubmit(e) {
     
     // 이미지가 없는 경우 바로 저장
     if (imageFiles.length === 0) {
-        savePost(title, category, date, content, images);
+        savePost(title, date, content, images);
     }
 }
 
 // 포스트 저장
-function savePost(title, category, date, content, images) {
+function savePost(title, date, content, images) {
     const newPost = {
         id: Date.now(),
         title,
-        category,
+        hashtags: [...hashtags],
         date,
         content,
         images
@@ -143,6 +166,9 @@ function savePost(title, category, date, content, images) {
     // 폼 초기화 및 숨기기
     document.getElementById('postForm').reset();
     document.getElementById('imagePreview').innerHTML = '';
+    hashtags = [];
+    imageDescriptions = {};
+    renderHashtags();
     toggleAddPost();
     
     // 성공 메시지
@@ -156,16 +182,30 @@ function handleImagePreview(e) {
     
     const files = e.target.files;
     
-    for (let file of files) {
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const reader = new FileReader();
         reader.onload = function(e) {
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            img.alt = file.name;
-            preview.appendChild(img);
+            const imageItem = document.createElement('div');
+            imageItem.className = 'image-preview-item';
+            imageItem.innerHTML = `
+                <img src="${e.target.result}" alt="${file.name}">
+                <div class="image-description-input">
+                    <textarea 
+                        placeholder="이 이미지에 대한 설명을 입력하세요..."
+                        onchange="updateImageDescription(${i}, this.value)"
+                    >${imageDescriptions[i] || ''}</textarea>
+                </div>
+            `;
+            preview.appendChild(imageItem);
         };
         reader.readAsDataURL(file);
     }
+}
+
+// 이미지 설명 업데이트
+function updateImageDescription(index, description) {
+    imageDescriptions[index] = description;
 }
 
 // 필터 클릭 처리
@@ -188,14 +228,29 @@ function renderPosts() {
     const container = document.getElementById('postsContainer');
     
     // 필터링된 포스트 가져오기
-    const filteredPosts = currentFilter === 'all' 
-        ? posts 
-        : posts.filter(post => post.category === currentFilter);
+    let filteredPosts = posts;
+    
+    if (currentFilter === 'hashtag') {
+        // 해시태그 검색 모드
+        const searchTerm = prompt('검색할 해시태그를 입력하세요:');
+        if (searchTerm) {
+            filteredPosts = posts.filter(post => 
+                post.hashtags.some(tag => 
+                    tag.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+            );
+        } else {
+            currentFilter = 'all';
+            document.querySelector('[data-filter="all"]').classList.add('active');
+            document.querySelector('[data-filter="hashtag"]').classList.remove('active');
+            filteredPosts = posts;
+        }
+    }
     
     if (filteredPosts.length === 0) {
         container.innerHTML = `
             <div class="loading">
-                ${currentFilter === 'all' ? '아직 저장된 학습 내용이 없습니다.' : '해당 카테고리의 학습 내용이 없습니다.'}
+                ${currentFilter === 'all' ? '아직 저장된 학습 내용이 없습니다.' : '해당 해시태그의 학습 내용이 없습니다.'}
             </div>
         `;
         return;
@@ -209,30 +264,33 @@ function renderPosts() {
 
 // 포스트 HTML 생성
 function createPostHTML(post) {
-    const categoryNames = {
-        frontend: '프론트엔드',
-        backend: '백엔드',
-        algorithm: '알고리즘',
-        other: '기타'
-    };
+    const hashtagsHTML = post.hashtags.length > 0 
+        ? `
+            <div class="post-hashtags">
+                ${post.hashtags.map(tag => `
+                    <span class="post-hashtag">#${tag}</span>
+                `).join('')}
+            </div>
+        ` : '';
     
     const imagesHTML = post.images.length > 0 
         ? `
             <div class="post-images">
                 ${post.images.map((img, index) => `
-                    <img src="${img}" alt="학습 이미지 ${index + 1}" class="post-image" data-index="${index}">
+                    <img src="${img.src}" alt="학습 이미지 ${index + 1}" class="post-image" 
+                         data-index="${index}" data-description="${img.description || ''}">
                 `).join('')}
             </div>
         ` : '';
     
     return `
-        <article class="post" data-category="${post.category}">
+        <article class="post">
             <div class="post-header">
                 <h2 class="post-title">${post.title}</h2>
                 <div class="post-meta">
-                    <span class="post-category">${categoryNames[post.category]}</span>
                     <span class="post-date">${formatDate(post.date)}</span>
                 </div>
+                ${hashtagsHTML}
             </div>
             <div class="post-content">
                 <p class="post-description">${post.content}</p>
@@ -258,13 +316,14 @@ function setupImageModal() {
     
     images.forEach(img => {
         img.addEventListener('click', function() {
-            showImageModal(this.src);
+            const description = this.dataset.description;
+            showImageModal(this.src, description);
         });
     });
 }
 
 // 이미지 모달 표시
-function showImageModal(imageSrc) {
+function showImageModal(imageSrc, description) {
     // 기존 모달 제거
     const existingModal = document.querySelector('.modal');
     if (existingModal) {
@@ -274,10 +333,16 @@ function showImageModal(imageSrc) {
     // 새 모달 생성
     const modal = document.createElement('div');
     modal.className = 'modal';
+    
+    const descriptionHTML = description 
+        ? `<div class="modal-description">${description}</div>` 
+        : '';
+    
     modal.innerHTML = `
         <div class="modal-content">
             <button class="modal-close" onclick="closeImageModal()">&times;</button>
             <img src="${imageSrc}" alt="확대된 이미지" class="modal-image">
+            ${descriptionHTML}
         </div>
     `;
     
@@ -330,13 +395,14 @@ function showNotification(message, type = 'info') {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: ${type === 'success' ? '#28a745' : '#007bff'};
-        color: white;
+        background: ${type === 'success' ? '#32cd32' : '#8a2be2'};
+        color: #1a1a2e;
         padding: 1rem 2rem;
         border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         z-index: 3000;
         animation: slideIn 0.3s ease-out;
+        font-weight: 600;
     `;
     
     document.body.appendChild(notification);
