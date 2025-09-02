@@ -8,6 +8,7 @@ let ownerMode = JSON.parse(localStorage.getItem('til_owner_mode')) ?? false;
 
 // DOM이 로드되면 실행
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM 로드됨');
     initializeApp();
     setupEventListeners();
     renderPosts();
@@ -37,11 +38,21 @@ function initializeApp() {
 
 // 이벤트 리스너 설정
 function setupEventListeners() {
+    console.log('이벤트 리스너 설정 시작');
+    
     // 폼 제출 이벤트
-    document.getElementById('postForm').addEventListener('submit', handleFormSubmit);
+    const postForm = document.getElementById('postForm');
+    if (postForm) {
+        postForm.addEventListener('submit', handleFormSubmit);
+        console.log('폼 제출 이벤트 리스너 추가됨');
+    }
     
     // 이미지 미리보기 이벤트
-    document.getElementById('images').addEventListener('change', handleImagePreview);
+    const imagesInput = document.getElementById('images');
+    if (imagesInput) {
+        imagesInput.addEventListener('change', handleImagePreview);
+        console.log('이미지 입력 이벤트 리스너 추가됨');
+    }
     
     // 필터 버튼 이벤트
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -49,10 +60,20 @@ function setupEventListeners() {
     });
     
     // 해시태그 입력 이벤트
-    document.getElementById('hashtagInput').addEventListener('keydown', handleHashtagInput);
+    const hashtagInput = document.getElementById('hashtagInput');
+    if (hashtagInput) {
+        hashtagInput.addEventListener('keydown', handleHashtagInput);
+        console.log('해시태그 입력 이벤트 리스너 추가됨');
+    }
 
     // 소유자 모드 토글
-    document.getElementById('ownerModeBtn').addEventListener('click', toggleOwnerMode);
+    const ownerModeBtn = document.getElementById('ownerModeBtn');
+    if (ownerModeBtn) {
+        ownerModeBtn.addEventListener('click', toggleOwnerMode);
+        console.log('소유자 모드 버튼 이벤트 리스너 추가됨');
+    }
+    
+    console.log('이벤트 리스너 설정 완료');
 }
 
 // 샘플 데이터 추가 (Video 카드만 유지)
@@ -75,6 +96,7 @@ function addSampleData() {
     
     posts = samplePosts;
     savePosts();
+    console.log('샘플 데이터 추가 완료');
 }
 
 // 해시태그 입력 처리
@@ -95,12 +117,14 @@ function handleHashtagInput(e) {
 // 해시태그 렌더링
 function renderHashtags() {
     const container = document.getElementById('hashtagContainer');
-    container.innerHTML = hashtags.map(tag => `
-        <span class="hashtag">
-            ${tag}
-            <button class="hashtag-remove" onclick="removeHashtag('${tag}')">&times;</button>
-        </span>
-    `).join('');
+    if (container) {
+        container.innerHTML = hashtags.map(tag => `
+            <span class="hashtag">
+                ${tag}
+                <button class="hashtag-remove" onclick="removeHashtag('${tag}')">&times;</button>
+            </span>
+        `).join('');
+    }
 }
 
 // 해시태그 제거
@@ -117,15 +141,24 @@ function toggleAddPost() {
     }
 
     const form = document.getElementById('addPostForm');
+    if (!form) {
+        console.error('addPostForm을 찾을 수 없습니다');
+        return;
+    }
+    
     const isVisible = form.style.display !== 'none';
     
     if (isVisible) {
         form.style.display = 'none';
-        document.getElementById('postForm').reset();
-        document.getElementById('imagePreview').innerHTML = '';
+        const postForm = document.getElementById('postForm');
+        if (postForm) postForm.reset();
+        
+        const imagePreview = document.getElementById('imagePreview');
+        if (imagePreview) imagePreview.innerHTML = '';
+        
         hashtags = [];
         imageDescriptions = {};
-        uploadedImages = []; // 이미지 배열 초기화
+        uploadedImages = [];
         renderHashtags();
     } else {
         form.style.display = 'block';
@@ -136,11 +169,14 @@ function toggleAddPost() {
 // 폼 제출 처리
 function handleFormSubmit(e) {
     e.preventDefault();
+    console.log('폼 제출 시작');
     
     const formData = new FormData(e.target);
     const title = formData.get('title');
     const date = formData.get('date');
     const content = formData.get('content');
+
+    console.log('폼 데이터:', { title, date, content });
 
     // 필수 필드 검증
     if (!title || !date || !content) {
@@ -154,9 +190,12 @@ function handleFormSubmit(e) {
         description: imageDescriptions[index] || ''
     }));
 
+    console.log('이미지 데이터:', images);
+
     // 수정 모드인지 여부 확인
     const editingId = e.target.getAttribute('data-editing-id');
     if (editingId) {
+        console.log('수정 모드:', editingId);
         const postIdx = posts.findIndex(p => String(p.id) === editingId);
         if (postIdx !== -1) {
             posts[postIdx] = {
@@ -172,6 +211,7 @@ function handleFormSubmit(e) {
         showNotification('수정이 완료되었습니다', 'success');
     } else {
         // 새 포스트 저장
+        console.log('새 포스트 생성 모드');
         const newPost = {
             id: Date.now(),
             title,
@@ -181,15 +221,30 @@ function handleFormSubmit(e) {
             images
         };
         
+        console.log('새 포스트 객체:', newPost);
+        
         posts.unshift(newPost);
+        console.log('포스트 배열에 추가됨. 현재 포스트 수:', posts.length);
+        
         showNotification('학습 내용이 성공적으로 저장되었습니다!', 'success');
     }
 
     // 공통 마무리
+    console.log('저장 전 포스트 수:', posts.length);
     savePosts();
+    console.log('로컬 스토리지에 저장됨');
+    
+    console.log('렌더링 시작');
     renderPosts();
-    document.getElementById('postForm').reset();
-    document.getElementById('imagePreview').innerHTML = '';
+    console.log('렌더링 완료');
+    
+    // 폼 초기화
+    const postForm = document.getElementById('postForm');
+    if (postForm) postForm.reset();
+    
+    const imagePreview = document.getElementById('imagePreview');
+    if (imagePreview) imagePreview.innerHTML = '';
+    
     hashtags = [];
     imageDescriptions = {};
     uploadedImages = [];
@@ -197,11 +252,14 @@ function handleFormSubmit(e) {
     toggleAddPost();
     
     // 디버깅: 저장된 포스트 수 확인
-    console.log('저장된 포스트 수:', posts.length);
+    console.log('최종 저장된 포스트 수:', posts.length);
     console.log('최신 포스트:', posts[0]);
+    
+    // 로컬 스토리지 확인
+    const storedPosts = JSON.parse(localStorage.getItem('til_posts')) || [];
+    console.log('로컬 스토리지의 포스트 수:', storedPosts.length);
+    console.log('로컬 스토리지의 최신 포스트:', storedPosts[0]);
 }
-
-
 
 // 이미지 미리보기 처리
 function handleImagePreview(e) {
@@ -226,6 +284,8 @@ function handleImagePreview(e) {
 // 이미지 미리보기 렌더링
 function renderImagePreview() {
     const preview = document.getElementById('imagePreview');
+    if (!preview) return;
+    
     preview.innerHTML = '';
     
     uploadedImages.forEach((imageData, index) => {
@@ -351,7 +411,8 @@ function deleteImage(index) {
     renderImagePreview();
     
     // 파일 입력 초기화
-    document.getElementById('images').value = '';
+    const imagesInput = document.getElementById('images');
+    if (imagesInput) imagesInput.value = '';
 }
 
 // 이미지 설명 업데이트
@@ -376,7 +437,17 @@ function handleFilterClick(e) {
 
 // 포스트 렌더링
 function renderPosts() {
+    console.log('renderPosts 시작');
+    console.log('현재 posts 배열:', posts);
+    console.log('현재 필터:', currentFilter);
+    
     const container = document.getElementById('postsContainer');
+    console.log('컨테이너 요소:', container);
+    
+    if (!container) {
+        console.error('postsContainer를 찾을 수 없습니다');
+        return;
+    }
     
     // 필터링된 포스트 가져오기
     let filteredPosts = posts;
@@ -398,7 +469,10 @@ function renderPosts() {
         }
     }
     
+    console.log('필터링된 포스트:', filteredPosts);
+    
     if (filteredPosts.length === 0) {
+        console.log('포스트가 없음 - 빈 상태 표시');
         container.innerHTML = `
             <div class="loading">
                 ${currentFilter === 'all' ? '아직 저장된 학습 내용이 없습니다.' : '해당 해시태그의 학습 내용이 없습니다.'}
@@ -407,10 +481,16 @@ function renderPosts() {
         return;
     }
     
-    container.innerHTML = filteredPosts.map(post => createPostHTML(post)).join('');
+    console.log('포스트 HTML 생성 시작');
+    const postsHTML = filteredPosts.map(post => createPostHTML(post)).join('');
+    console.log('생성된 HTML 길이:', postsHTML.length);
+    
+    container.innerHTML = postsHTML;
+    console.log('컨테이너에 HTML 삽입 완료');
     
     // 이미지 클릭 이벤트 추가
     setupImageModal();
+    console.log('이미지 모달 설정 완료');
 }
 
 // 포스트 HTML 생성
@@ -608,7 +688,7 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeImageModal();
         const form = document.getElementById('addPostForm');
-        if (form.style.display !== 'none') {
+        if (form && form.style.display !== 'none') {
             toggleAddPost();
         }
     }
@@ -706,9 +786,14 @@ function startEditPost(postId) {
     if (!post) return;
     
     // 폼에 값 채우기
-    document.getElementById('title').value = post.title;
-    document.getElementById('date').value = post.date;
-    document.getElementById('content').value = post.content;
+    const titleInput = document.getElementById('title');
+    const dateInput = document.getElementById('date');
+    const contentInput = document.getElementById('content');
+    
+    if (titleInput) titleInput.value = post.title;
+    if (dateInput) dateInput.value = post.date;
+    if (contentInput) contentInput.value = post.content;
+    
     hashtags = [...post.hashtags];
     renderHashtags();
     
@@ -720,12 +805,12 @@ function startEditPost(postId) {
     
     // 편집 모드 표시
     const form = document.getElementById('postForm');
-    form.setAttribute('data-editing-id', String(post.id));
+    if (form) form.setAttribute('data-editing-id', String(post.id));
     
     // 폼 열기
     const addForm = document.getElementById('addPostForm');
-    if (addForm.style.display === 'none') toggleAddPost();
-    addForm.scrollIntoView({ behavior: 'smooth' });
+    if (addForm && addForm.style.display === 'none') toggleAddPost();
+    if (addForm) addForm.scrollIntoView({ behavior: 'smooth' });
 }
 
 function deletePost(postId) {
