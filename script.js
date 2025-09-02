@@ -132,6 +132,12 @@ function handleFormSubmit(e) {
     const date = formData.get('date');
     const content = formData.get('content');
 
+    // 필수 필드 검증
+    if (!title || !date || !content) {
+        showNotification('제목, 날짜, 내용을 모두 입력해주세요.', 'info');
+        return;
+    }
+
     // 업로드된 이미지들로 포스트 저장
     const images = uploadedImages.map((img, index) => ({
         src: img.src,
@@ -179,6 +185,10 @@ function handleFormSubmit(e) {
     uploadedImages = [];
     renderHashtags();
     toggleAddPost();
+    
+    // 디버깅: 저장된 포스트 수 확인
+    console.log('저장된 포스트 수:', posts.length);
+    console.log('최신 포스트:', posts[0]);
 }
 
 
@@ -622,14 +632,35 @@ function updateOwnerModeUI() {
     const addSection = document.getElementById('addPostSection');
     if (!btn || !addSection) return;
     
+    // 기존 표시기 제거
+    const existingIndicator = document.querySelector('.owner-mode-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+    
     if (ownerMode) {
         btn.classList.add('owner-on');
+        btn.textContent = '소유자 모드 ON';
         addSection.style.display = 'block';
+        
+        // 소유자 모드 표시기 추가
+        const indicator = document.createElement('div');
+        indicator.className = 'owner-mode-indicator';
+        indicator.innerHTML = `
+            <i class="fas fa-crown"></i>
+            소유자 모드 활성화
+        `;
+        document.body.appendChild(indicator);
+        
+        showNotification('소유자 모드가 활성화되었습니다!', 'success');
     } else {
         btn.classList.remove('owner-on');
+        btn.textContent = '소유자 모드';
         addSection.style.display = 'none';
         const form = document.getElementById('addPostForm');
         if (form && form.style.display !== 'none') toggleAddPost();
+        
+        showNotification('소유자 모드가 비활성화되었습니다.', 'info');
     }
 }
 
