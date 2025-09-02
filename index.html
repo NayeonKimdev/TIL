@@ -3,64 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Today I Learned - 포스트잇</title>
+    <title>Dev Knowledge Base</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
+    <div class="app">
         <!-- 헤더 -->
         <header class="header">
-            <h1 class="title">Today I Learned</h1>
-            <button class="add-btn" onclick="openPostModal()">
-                <span class="add-icon">+</span>
-                글 업로드
-            </button>
+            <div class="header-content">
+                <h1 class="logo">
+                    <i class="fas fa-code"></i>
+                    Dev Knowledge Base
+                </h1>
+                <nav class="nav">
+                    <button class="nav-btn active" data-filter="all">전체</button>
+                    <button class="nav-btn" data-filter="javascript">JavaScript</button>
+                    <button class="nav-btn" data-filter="css">CSS</button>
+                    <button class="nav-btn" data-filter="html">HTML</button>
+                    <button class="nav-btn" data-filter="react">React</button>
+                    <button class="nav-btn" data-filter="nodejs">Node.js</button>
+                    <button class="nav-btn" data-filter="database">Database</button>
+                    <button class="nav-btn" data-filter="algorithm">Algorithm</button>
+                </nav>
+                <div class="header-actions">
+                    <button class="search-btn" onclick="openSearchModal()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="write-btn" onclick="openWriteModal()">
+                        <i class="fas fa-pen"></i>
+                        글쓰기
+                    </button>
+                </div>
+            </div>
         </header>
 
         <!-- 메인 콘텐츠 -->
         <main class="main">
-            <div class="board">
+            <div class="container">
                 <div id="postsContainer" class="posts-container">
-                    <!-- 포스트잇들이 여기에 동적으로 추가됩니다 -->
+                    <!-- 포스트들이 여기에 동적으로 추가됩니다 -->
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- 포스트 작성 모달 -->
-    <div id="postModal" class="modal">
-        <div class="modal-content">
+    <!-- 글쓰기 모달 -->
+    <div id="writeModal" class="modal">
+        <div class="modal-content write-modal">
             <div class="modal-header">
                 <h2>새 글 작성</h2>
-                <button class="close-btn" onclick="closePostModal()">&times;</button>
+                <button class="close-btn" onclick="closeWriteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             
-            <form id="postForm" class="post-form">
+            <form id="writeForm" class="write-form">
                 <div class="form-group">
                     <label for="title">제목</label>
-                    <input type="text" id="title" name="title" required placeholder="제목을 입력하세요">
+                    <input type="text" id="title" name="title" required placeholder="글 제목을 입력하세요">
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">카테고리</label>
+                    <select id="category" name="category" required>
+                        <option value="">카테고리를 선택하세요</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="css">CSS</option>
+                        <option value="html">HTML</option>
+                        <option value="react">React</option>
+                        <option value="nodejs">Node.js</option>
+                        <option value="database">Database</option>
+                        <option value="algorithm">Algorithm</option>
+                        <option value="other">기타</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
                     <label for="content">내용</label>
-                    <textarea id="content" name="content" required placeholder="학습한 내용을 작성하세요"></textarea>
+                    <textarea id="content" name="content" required placeholder="개발 상식이나 팁을 작성하세요..."></textarea>
                 </div>
                 
                 <div class="form-group">
-                    <label for="date">날짜</label>
-                    <input type="date" id="date" name="date" required>
+                    <label for="media">미디어 추가</label>
+                    <div class="media-upload">
+                        <input type="file" id="media" name="media" accept="image/*,video/*" multiple>
+                        <div class="upload-area" onclick="document.getElementById('media').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>클릭하여 이미지나 비디오 추가</p>
+                        </div>
+                    </div>
+                    <div id="mediaPreview" class="media-preview"></div>
                 </div>
                 
                 <div class="form-group">
                     <label for="hashtags">해시태그</label>
-                    <input type="text" id="hashtags" name="hashtags" placeholder="해시태그를 쉼표로 구분하여 입력하세요 (예: javascript, react, css)">
+                    <input type="text" id="hashtags" name="hashtags" placeholder="해시태그를 쉼표로 구분하여 입력하세요 (예: javascript, es6, async)">
                 </div>
                 
                 <div class="form-actions">
-                    <button type="button" class="cancel-btn" onclick="closePostModal()">취소</button>
-                    <button type="submit" class="submit-btn">업로드</button>
+                    <button type="button" class="cancel-btn" onclick="closeWriteModal()">취소</button>
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-paper-plane"></i>
+                        발행
+                    </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 검색 모달 -->
+    <div id="searchModal" class="modal">
+        <div class="modal-content search-modal">
+            <div class="modal-header">
+                <h2>검색</h2>
+                <button class="close-btn" onclick="closeSearchModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="search-form">
+                <div class="search-input-group">
+                    <input type="text" id="searchInput" placeholder="검색어를 입력하세요...">
+                    <button class="search-submit-btn" onclick="performSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="search-filters">
+                    <select id="searchCategory">
+                        <option value="">모든 카테고리</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="css">CSS</option>
+                        <option value="html">HTML</option>
+                        <option value="react">React</option>
+                        <option value="nodejs">Node.js</option>
+                        <option value="database">Database</option>
+                        <option value="algorithm">Algorithm</option>
+                        <option value="other">기타</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="searchResults" class="search-results"></div>
         </div>
     </div>
 
