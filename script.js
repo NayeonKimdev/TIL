@@ -191,6 +191,24 @@ function handleFormSubmit(e) {
     console.log('폼 제출 시작');
     
     try {
+        // 전역 변수들 안전 초기화
+        if (!Array.isArray(posts)) {
+            console.warn('posts 배열 초기화');
+            posts = [];
+        }
+        if (!Array.isArray(hashtags)) {
+            console.warn('hashtags 배열 초기화');
+            hashtags = [];
+        }
+        if (!Array.isArray(uploadedImages)) {
+            console.warn('uploadedImages 배열 초기화');
+            uploadedImages = [];
+        }
+        if (!imageDescriptions || typeof imageDescriptions !== 'object') {
+            console.warn('imageDescriptions 객체 초기화');
+            imageDescriptions = {};
+        }
+        
         const formData = new FormData(e.target);
         const title = formData.get('title');
         const date = formData.get('date');
@@ -214,11 +232,19 @@ function handleFormSubmit(e) {
             return false;
         }
 
-        // 업로드된 이미지들로 포스트 저장
-        const images = (Array.isArray(uploadedImages) ? uploadedImages : []).map((img, index) => ({
-            src: img.src,
-            description: ((imageDescriptions && typeof imageDescriptions === 'object') ? imageDescriptions[index] : '') || ''
-        }));
+        // 업로드된 이미지들로 포스트 저장 (안전한 방식)
+        const images = [];
+        if (Array.isArray(uploadedImages)) {
+            uploadedImages.forEach((img, index) => {
+                if (img && img.src) {
+                    const description = (imageDescriptions && imageDescriptions[index]) || '';
+                    images.push({
+                        src: img.src,
+                        description: description.trim()
+                    });
+                }
+            });
+        }
 
         console.log('이미지 데이터:', images);
 
@@ -226,7 +252,7 @@ function handleFormSubmit(e) {
         const editingId = e.target.getAttribute('data-editing-id');
         if (editingId) {
             console.log('수정 모드:', editingId);
-            const postIdx = (Array.isArray(posts) ? posts : []).findIndex(p => String(p.id) === editingId);
+            const postIdx = posts.findIndex(p => String(p.id) === editingId);
             if (postIdx !== -1) {
                 posts[postIdx] = {
                     ...posts[postIdx],
@@ -252,12 +278,6 @@ function handleFormSubmit(e) {
             };
             
             console.log('새 포스트 객체:', newPost);
-            
-            // 포스트 배열이 없으면 초기화
-            if (!Array.isArray(posts)) {
-                console.log('posts 배열 초기화');
-                posts = [];
-            }
             
             posts.unshift(newPost);
             console.log('포스트 배열에 추가됨. 현재 포스트 수:', posts.length);
@@ -287,6 +307,7 @@ function handleFormSubmit(e) {
             console.log('이미지 미리보기 초기화 완료');
         }
         
+        // 전역 변수 초기화
         hashtags = [];
         imageDescriptions = {};
         uploadedImages = [];
@@ -499,6 +520,13 @@ function handleFilterClick(e) {
 // 포스트 렌더링
 function renderPosts() {
     console.log('=== renderPosts 시작 ===');
+    
+    // posts 배열 안전 초기화
+    if (!Array.isArray(posts)) {
+        console.warn('renderPosts: posts가 배열이 아닙니다. 초기화합니다.');
+        posts = [];
+    }
+    
     console.log('현재 posts 배열:', posts);
     console.log('현재 필터:', currentFilter);
     
@@ -517,11 +545,18 @@ function renderPosts() {
         // 해시태그 검색 모드
         const searchTerm = prompt('검색할 해시태그를 입력하세요:');
         if (searchTerm) {
-            filteredPosts = posts.filter(post => 
-                post.hashtags.some(tag => 
-                    tag.toLowerCase().includes(searchTerm.toLowerCase())
-                )
-            );
+            filteredPosts = posts.filter(post => {
+                // post 객체 및 hashtags 배열 검증
+                if (!post || typeof post !== 'object') {
+                    console.warn('잘못된 포스트 객체:', post);
+                    return false;
+                }
+                
+                const postHashtags = Array.isArray(post.hashtags) ? post.hashtags : [];
+                return postHashtags.some(tag => 
+                    tag && typeof tag === 'string' && tag.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+            });
         } else {
             currentFilter = 'all';
             const allBtn = document.querySelector('[data-filter="all"]');
