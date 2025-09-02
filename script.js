@@ -106,6 +106,12 @@ function handleHashtagInput(e) {
         const input = e.target;
         const hashtag = input.value.trim();
         
+        // hashtags 배열 검증
+        if (!Array.isArray(hashtags)) {
+            console.warn('hashtags가 배열이 아닙니다. 초기화합니다.');
+            hashtags = [];
+        }
+        
         if (hashtag && !hashtags.includes(hashtag)) {
             hashtags.push(hashtag);
             renderHashtags();
@@ -118,6 +124,12 @@ function handleHashtagInput(e) {
 function renderHashtags() {
     const container = document.getElementById('hashtagContainer');
     if (container) {
+        // hashtags 배열이 undefined인 경우 빈 배열로 초기화
+        if (!Array.isArray(hashtags)) {
+            console.warn('hashtags가 배열이 아닙니다. 초기화합니다.');
+            hashtags = [];
+        }
+        
         container.innerHTML = hashtags.map(tag => `
             <span class="hashtag">
                 ${tag}
@@ -129,6 +141,12 @@ function renderHashtags() {
 
 // 해시태그 제거
 function removeHashtag(tag) {
+    // hashtags 배열이 undefined인 경우 빈 배열로 초기화
+    if (!Array.isArray(hashtags)) {
+        console.warn('hashtags가 배열이 아닙니다. 초기화합니다.');
+        hashtags = [];
+    }
+    
     hashtags = hashtags.filter(t => t !== tag);
     renderHashtags();
 }
@@ -197,9 +215,9 @@ function handleFormSubmit(e) {
         }
 
         // 업로드된 이미지들로 포스트 저장
-        const images = uploadedImages.map((img, index) => ({
+        const images = (Array.isArray(uploadedImages) ? uploadedImages : []).map((img, index) => ({
             src: img.src,
-            description: (imageDescriptions[index] || '').trim()
+            description: ((imageDescriptions && typeof imageDescriptions === 'object') ? imageDescriptions[index] : '') || ''
         }));
 
         console.log('이미지 데이터:', images);
@@ -208,7 +226,7 @@ function handleFormSubmit(e) {
         const editingId = e.target.getAttribute('data-editing-id');
         if (editingId) {
             console.log('수정 모드:', editingId);
-            const postIdx = posts.findIndex(p => String(p.id) === editingId);
+            const postIdx = (Array.isArray(posts) ? posts : []).findIndex(p => String(p.id) === editingId);
             if (postIdx !== -1) {
                 posts[postIdx] = {
                     ...posts[postIdx],
