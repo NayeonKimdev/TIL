@@ -155,8 +155,18 @@ function handleFormSubmit(e) {
         e.target.removeAttribute('data-editing-id');
         showNotification('수정이 완료되었습니다', 'success');
     } else {
-        savePost(title, date, content, images);
-        return;
+        // 새 포스트 저장
+        const newPost = {
+            id: Date.now(),
+            title,
+            hashtags: [...hashtags],
+            date,
+            content,
+            images
+        };
+        
+        posts.unshift(newPost);
+        showNotification('학습 내용이 성공적으로 저장되었습니다!', 'success');
     }
 
     // 공통 마무리
@@ -171,33 +181,7 @@ function handleFormSubmit(e) {
     toggleAddPost();
 }
 
-// 포스트 저장
-function savePost(title, date, content, images) {
-    const newPost = {
-        id: Date.now(),
-        title,
-        hashtags: [...hashtags],
-        date,
-        content,
-        images
-    };
-    
-    posts.unshift(newPost);
-    savePosts();
-    renderPosts();
-    
-    // 폼 초기화 및 숨기기
-    document.getElementById('postForm').reset();
-    document.getElementById('imagePreview').innerHTML = '';
-    hashtags = [];
-    imageDescriptions = {};
-    uploadedImages = []; // 이미지 배열 초기화
-    renderHashtags();
-    toggleAddPost();
-    
-    // 성공 메시지
-    showNotification('학습 내용이 성공적으로 저장되었습니다!', 'success');
-}
+
 
 // 이미지 미리보기 처리
 function handleImagePreview(e) {
