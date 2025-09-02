@@ -16,13 +16,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 앱 초기화
 function initializeApp() {
+    console.log('앱 초기화 시작');
+    
     // 오늘 날짜를 기본값으로 설정
-    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+        console.log('날짜 입력 필드 설정됨:', dateInput.value);
+    }
     
     // 샘플 데이터가 없으면 추가
+    console.log('현재 포스트 수:', posts.length);
     if (posts.length === 0) {
+        console.log('샘플 데이터 추가');
         addSampleData();
     }
+    
+    console.log('앱 초기화 완료');
 }
 
 // 이벤트 리스너 설정
@@ -523,7 +533,28 @@ function closeImageModal() {
 
 // 포스트 저장 (로컬 스토리지)
 function savePosts() {
-    localStorage.setItem('til_posts', JSON.stringify(posts));
+    console.log('savePosts 호출됨');
+    console.log('저장할 포스트:', posts);
+    
+    try {
+        const postsJSON = JSON.stringify(posts);
+        console.log('JSON 문자열 길이:', postsJSON.length);
+        
+        localStorage.setItem('til_posts', postsJSON);
+        console.log('로컬 스토리지 저장 완료');
+        
+        // 저장 확인
+        const savedPosts = localStorage.getItem('til_posts');
+        console.log('저장 확인 - 로컬 스토리지에서 읽어온 데이터:', savedPosts);
+        
+        if (savedPosts) {
+            const parsedPosts = JSON.parse(savedPosts);
+            console.log('파싱된 저장된 포스트:', parsedPosts);
+        }
+    } catch (error) {
+        console.error('포스트 저장 중 오류:', error);
+        showNotification('포스트 저장 중 오류가 발생했습니다.', 'error');
+    }
 }
 
 // 알림 표시
