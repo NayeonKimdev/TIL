@@ -169,6 +169,7 @@ function toggleAddPost() {
 // 폼 제출 처리
 function handleFormSubmit(e) {
     e.preventDefault();
+    e.stopPropagation(); // 이벤트 전파 중단
     console.log('폼 제출 시작');
     
     const formData = new FormData(e.target);
@@ -181,7 +182,7 @@ function handleFormSubmit(e) {
     // 필수 필드 검증
     if (!title || !date || !content) {
         showNotification('제목, 날짜, 내용을 모두 입력해주세요.', 'info');
-        return;
+        return false; // 폼 제출 중단
     }
 
     // 업로드된 이미지들로 포스트 저장
@@ -240,15 +241,23 @@ function handleFormSubmit(e) {
     
     // 폼 초기화
     const postForm = document.getElementById('postForm');
-    if (postForm) postForm.reset();
+    if (postForm) {
+        postForm.reset();
+        console.log('폼 리셋 완료');
+    }
     
     const imagePreview = document.getElementById('imagePreview');
-    if (imagePreview) imagePreview.innerHTML = '';
+    if (imagePreview) {
+        imagePreview.innerHTML = '';
+        console.log('이미지 미리보기 초기화 완료');
+    }
     
     hashtags = [];
     imageDescriptions = {};
     uploadedImages = [];
     renderHashtags();
+    
+    // 폼 숨기기
     toggleAddPost();
     
     // 디버깅: 저장된 포스트 수 확인
@@ -259,6 +268,11 @@ function handleFormSubmit(e) {
     const storedPosts = JSON.parse(localStorage.getItem('til_posts')) || [];
     console.log('로컬 스토리지의 포스트 수:', storedPosts.length);
     console.log('로컬 스토리지의 최신 포스트:', storedPosts[0]);
+    
+    // 페이지 스크롤을 맨 위로
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    return false; // 폼 제출 완전 중단
 }
 
 // 이미지 미리보기 처리
@@ -437,7 +451,7 @@ function handleFilterClick(e) {
 
 // 포스트 렌더링
 function renderPosts() {
-    console.log('renderPosts 시작');
+    console.log('=== renderPosts 시작 ===');
     console.log('현재 posts 배열:', posts);
     console.log('현재 필터:', currentFilter);
     
@@ -463,13 +477,16 @@ function renderPosts() {
             );
         } else {
             currentFilter = 'all';
-            document.querySelector('[data-filter="all"]').classList.add('active');
-            document.querySelector('[data-filter="hashtag"]').classList.remove('active');
+            const allBtn = document.querySelector('[data-filter="all"]');
+            const hashtagBtn = document.querySelector('[data-filter="hashtag"]');
+            if (allBtn) allBtn.classList.add('active');
+            if (hashtagBtn) hashtagBtn.classList.remove('active');
             filteredPosts = posts;
         }
     }
     
     console.log('필터링된 포스트:', filteredPosts);
+    console.log('필터링된 포스트 수:', filteredPosts.length);
     
     if (filteredPosts.length === 0) {
         console.log('포스트가 없음 - 빈 상태 표시');
@@ -478,19 +495,27 @@ function renderPosts() {
                 ${currentFilter === 'all' ? '아직 저장된 학습 내용이 없습니다.' : '해당 해시태그의 학습 내용이 없습니다.'}
             </div>
         `;
+        console.log('빈 상태 HTML 삽입 완료');
         return;
     }
     
     console.log('포스트 HTML 생성 시작');
     const postsHTML = filteredPosts.map(post => createPostHTML(post)).join('');
     console.log('생성된 HTML 길이:', postsHTML.length);
+    console.log('생성된 HTML 미리보기:', postsHTML.substring(0, 200) + '...');
     
     container.innerHTML = postsHTML;
     console.log('컨테이너에 HTML 삽입 완료');
     
+    // 생성된 포스트 요소들 확인
+    const postElements = container.querySelectorAll('.post');
+    console.log('생성된 포스트 요소 수:', postElements.length);
+    
     // 이미지 클릭 이벤트 추가
     setupImageModal();
     console.log('이미지 모달 설정 완료');
+    
+    console.log('=== renderPosts 완료 ===');
 }
 
 // 포스트 HTML 생성
