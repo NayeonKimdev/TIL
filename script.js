@@ -172,107 +172,136 @@ function handleFormSubmit(e) {
     e.stopPropagation(); // 이벤트 전파 중단
     console.log('폼 제출 시작');
     
-    const formData = new FormData(e.target);
-    const title = formData.get('title');
-    const date = formData.get('date');
-    const content = formData.get('content');
+    try {
+        const formData = new FormData(e.target);
+        const title = formData.get('title');
+        const date = formData.get('date');
+        const content = formData.get('content');
 
-    console.log('폼 데이터:', { title, date, content });
+        console.log('폼 데이터:', { title, date, content });
 
-    // 필수 필드 검증
-    if (!title || !date || !content) {
-        showNotification('제목, 날짜, 내용을 모두 입력해주세요.', 'info');
-        return false; // 폼 제출 중단
-    }
+        // 필수 필드 검증
+        if (!title || !date || !content) {
+            showNotification('제목, 날짜, 내용을 모두 입력해주세요.', 'info');
+            return false; // 폼 제출 중단
+        }
 
-    // 업로드된 이미지들로 포스트 저장
-    const images = uploadedImages.map((img, index) => ({
-        src: img.src,
-        description: imageDescriptions[index] || ''
-    }));
+        // 데이터 정리
+        const cleanTitle = title.trim();
+        const cleanDate = date.trim();
+        const cleanContent = content.trim();
 
-    console.log('이미지 데이터:', images);
+        if (!cleanTitle || !cleanDate || !cleanContent) {
+            showNotification('제목, 날짜, 내용을 모두 입력해주세요.', 'info');
+            return false;
+        }
 
-    // 수정 모드인지 여부 확인
-    const editingId = e.target.getAttribute('data-editing-id');
-    if (editingId) {
-        console.log('수정 모드:', editingId);
-        const postIdx = posts.findIndex(p => String(p.id) === editingId);
-        if (postIdx !== -1) {
-            posts[postIdx] = {
-                ...posts[postIdx],
-                title,
+        // 업로드된 이미지들로 포스트 저장
+        const images = uploadedImages.map((img, index) => ({
+            src: img.src,
+            description: (imageDescriptions[index] || '').trim()
+        }));
+
+        console.log('이미지 데이터:', images);
+
+        // 수정 모드인지 여부 확인
+        const editingId = e.target.getAttribute('data-editing-id');
+        if (editingId) {
+            console.log('수정 모드:', editingId);
+            const postIdx = posts.findIndex(p => String(p.id) === editingId);
+            if (postIdx !== -1) {
+                posts[postIdx] = {
+                    ...posts[postIdx],
+                    title: cleanTitle,
+                    hashtags: [...hashtags],
+                    date: cleanDate,
+                    content: cleanContent,
+                    images
+                };
+            }
+            e.target.removeAttribute('data-editing-id');
+            showNotification('수정이 완료되었습니다', 'success');
+        } else {
+            // 새 포스트 저장
+            console.log('새 포스트 생성 모드');
+            const newPost = {
+                id: Date.now(),
+                title: cleanTitle,
                 hashtags: [...hashtags],
-                date,
-                content,
+                date: cleanDate,
+                content: cleanContent,
                 images
             };
+            
+            console.log('새 포스트 객체:', newPost);
+            
+            // 포스트 배열이 없으면 초기화
+            if (!Array.isArray(posts)) {
+                console.log('posts 배열 초기화');
+                posts = [];
+            }
+            
+            posts.unshift(newPost);
+            console.log('포스트 배열에 추가됨. 현재 포스트 수:', posts.length);
+            
+            showNotification('학습 내용이 성공적으로 저장되었습니다!', 'success');
         }
-        e.target.removeAttribute('data-editing-id');
-        showNotification('수정이 완료되었습니다', 'success');
-    } else {
-        // 새 포스트 저장
-        console.log('새 포스트 생성 모드');
-        const newPost = {
-            id: Date.now(),
-            title,
-            hashtags: [...hashtags],
-            date,
-            content,
-            images
-        };
-        
-        console.log('새 포스트 객체:', newPost);
-        
-        posts.unshift(newPost);
-        console.log('포스트 배열에 추가됨. 현재 포스트 수:', posts.length);
-        
-        showNotification('학습 내용이 성공적으로 저장되었습니다!', 'success');
-    }
 
-    // 공통 마무리
-    console.log('저장 전 포스트 수:', posts.length);
-    savePosts();
-    console.log('로컬 스토리지에 저장됨');
-    
-    console.log('렌더링 시작');
-    renderPosts();
-    console.log('렌더링 완료');
-    
-    // 폼 초기화
-    const postForm = document.getElementById('postForm');
-    if (postForm) {
-        postForm.reset();
-        console.log('폼 리셋 완료');
+        // 공통 마무리
+        console.log('저장 전 포스트 수:', posts.length);
+        savePosts();
+        console.log('로컬 스토리지에 저장됨');
+        
+        console.log('렌더링 시작');
+        renderPosts();
+        console.log('렌더링 완료');
+        
+        // 폼 초기화
+        const postForm = document.getElementById('postForm');
+        if (postForm) {
+            postForm.reset();
+            console.log('폼 리셋 완료');
+        }
+        
+        const imagePreview = document.getElementById('imagePreview');
+        if (imagePreview) {
+            imagePreview.innerHTML = '';
+            console.log('이미지 미리보기 초기화 완료');
+        }
+        
+        hashtags = [];
+        imageDescriptions = {};
+        uploadedImages = [];
+        renderHashtags();
+        
+        // 폼 숨기기
+        toggleAddPost();
+        
+        // 디버깅: 저장된 포스트 수 확인
+        console.log('최종 저장된 포스트 수:', posts.length);
+        console.log('최신 포스트:', posts[0]);
+        
+        // 로컬 스토리지 확인
+        const storedPosts = JSON.parse(localStorage.getItem('til_posts')) || [];
+        console.log('로컬 스토리지의 포스트 수:', storedPosts.length);
+        console.log('로컬 스토리지의 최신 포스트:', storedPosts[0]);
+        
+        // 페이지 스크롤을 맨 위로
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        return false; // 폼 제출 완전 중단
+        
+    } catch (error) {
+        console.error('폼 제출 처리 중 오류:', error);
+        console.error('오류 상세 정보:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        
+        showNotification('폼 제출 중 오류가 발생했습니다: ' + error.message, 'error');
+        return false;
     }
-    
-    const imagePreview = document.getElementById('imagePreview');
-    if (imagePreview) {
-        imagePreview.innerHTML = '';
-        console.log('이미지 미리보기 초기화 완료');
-    }
-    
-    hashtags = [];
-    imageDescriptions = {};
-    uploadedImages = [];
-    renderHashtags();
-    
-    // 폼 숨기기
-    toggleAddPost();
-    
-    // 디버깅: 저장된 포스트 수 확인
-    console.log('최종 저장된 포스트 수:', posts.length);
-    console.log('최신 포스트:', posts[0]);
-    
-    // 로컬 스토리지 확인
-    const storedPosts = JSON.parse(localStorage.getItem('til_posts')) || [];
-    console.log('로컬 스토리지의 포스트 수:', storedPosts.length);
-    console.log('로컬 스토리지의 최신 포스트:', storedPosts[0]);
-    
-    // 페이지 스크롤을 맨 위로
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    return false; // 폼 제출 완전 중단
 }
 
 // 이미지 미리보기 처리
@@ -642,8 +671,39 @@ function savePosts() {
     console.log('저장할 포스트:', posts);
     
     try {
-        const postsJSON = JSON.stringify(posts);
+        // 포스트 데이터 검증
+        if (!Array.isArray(posts)) {
+            console.error('posts가 배열이 아닙니다:', posts);
+            posts = [];
+        }
+        
+        // 각 포스트의 필수 필드 검증
+        const validPosts = posts.filter(post => {
+            if (!post || typeof post !== 'object') {
+                console.error('잘못된 포스트 객체:', post);
+                return false;
+            }
+            
+            if (!post.id || !post.title || !post.date || !post.content) {
+                console.error('필수 필드가 누락된 포스트:', post);
+                return false;
+            }
+            
+            return true;
+        });
+        
+        console.log('검증된 포스트:', validPosts);
+        
+        const postsJSON = JSON.stringify(validPosts);
         console.log('JSON 문자열 길이:', postsJSON.length);
+        
+        // 로컬 스토리지 용량 확인
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (postsJSON.length > maxSize) {
+            console.error('로컬 스토리지 용량 초과:', postsJSON.length, 'bytes');
+            showNotification('저장할 데이터가 너무 큽니다. 일부 이미지를 제거해주세요.', 'error');
+            return;
+        }
         
         localStorage.setItem('til_posts', postsJSON);
         console.log('로컬 스토리지 저장 완료');
@@ -655,10 +715,35 @@ function savePosts() {
         if (savedPosts) {
             const parsedPosts = JSON.parse(savedPosts);
             console.log('파싱된 저장된 포스트:', parsedPosts);
+            
+            // 저장된 데이터와 원본 데이터 비교
+            if (JSON.stringify(parsedPosts) !== JSON.stringify(validPosts)) {
+                console.error('저장된 데이터와 원본 데이터가 다릅니다');
+                showNotification('데이터 저장 중 오류가 발생했습니다.', 'error');
+            } else {
+                console.log('데이터 저장 검증 완료');
+            }
         }
+        
+        // posts 배열 업데이트
+        posts = validPosts;
+        
     } catch (error) {
         console.error('포스트 저장 중 오류:', error);
-        showNotification('포스트 저장 중 오류가 발생했습니다.', 'error');
+        console.error('오류 상세 정보:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
+        
+        // 오류 유형별 처리
+        if (error.name === 'QuotaExceededError') {
+            showNotification('브라우저 저장 공간이 부족합니다. 일부 데이터를 삭제해주세요.', 'error');
+        } else if (error.name === 'TypeError') {
+            showNotification('데이터 형식 오류가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
+        } else {
+            showNotification('포스트 저장 중 오류가 발생했습니다: ' + error.message, 'error');
+        }
     }
 }
 
