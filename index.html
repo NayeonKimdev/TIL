@@ -3,86 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Today I Learned - 학습 기록</title>
+    <title>Today I Learned - 포스트잇</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <header class="header">
-        <div class="container">
-            <h1 class="logo">
-                <i class="fas fa-graduation-cap"></i>
-                Today I Learned
-            </h1>
-            <nav class="nav">
-                <button class="nav-btn active" data-filter="all">전체</button>
-                <button class="nav-btn" data-filter="hashtag">해시태그 검색</button>
-                <button id="ownerModeBtn" class="nav-btn" title="소유자만 편집 가능 토글">소유자 모드</button>
-            </nav>
-        </div>
-    </header>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1 class="title">Today I Learned</h1>
+            <button class="add-btn" onclick="openPostModal()">
+                <span class="add-icon">+</span>
+                글 업로드
+            </button>
+        </header>
 
-    <main class="main">
-        <div class="container">
-            <div class="add-post-section" id="addPostSection">
-                <button class="add-post-btn" onclick="toggleAddPost()">
-                    <i class="fas fa-plus"></i>
-                    새 학습 내용 추가
-                </button>
+        <!-- 메인 콘텐츠 -->
+        <main class="main">
+            <div class="board">
+                <div id="postsContainer" class="posts-container">
+                    <!-- 포스트잇들이 여기에 동적으로 추가됩니다 -->
+                </div>
             </div>
+        </main>
+    </div>
 
-            <div class="add-post-form" id="addPostForm" style="display: none;">
-                <h3>새 학습 내용 추가</h3>
-                <form id="postForm" onsubmit="return false;">
-                    <div class="form-group">
-                        <label for="title">제목</label>
-                        <input type="text" id="title" name="title" required placeholder="학습한 내용의 제목을 입력하세요">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="hashtags">해시태그</label>
-                        <input type="text" id="hashtagInput" placeholder="#react #javascript #css (Enter로 추가)">
-                        <div class="hashtag-input" id="hashtagContainer"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="date">학습 날짜</label>
-                        <input type="date" id="date" name="date" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="content">학습 내용 설명</label>
-                        <textarea id="content" name="content" rows="8" placeholder="오늘 배운 내용을 자세히 설명해주세요..."></textarea>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="images">이미지 파일들</label>
-                        <div class="image-upload-section">
-                            <input type="file" id="images" name="images" multiple accept="image/*">
-                            <p style="margin-top: 1rem; color: #888;">이미지를 선택하면 각 이미지별로 설명을 추가할 수 있습니다</p>
-                        </div>
-                        <div class="image-preview" id="imagePreview"></div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="submit-btn">저장하기</button>
-                        <button type="button" class="cancel-btn" onclick="toggleAddPost()">취소</button>
-                    </div>
-                </form>
+    <!-- 포스트 작성 모달 -->
+    <div id="postModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>새 글 작성</h2>
+                <button class="close-btn" onclick="closePostModal()">&times;</button>
             </div>
-
-            <div class="posts-container" id="postsContainer">
-                <!-- 포스트들이 여기에 동적으로 추가됩니다 -->
-            </div>
+            
+            <form id="postForm" class="post-form">
+                <div class="form-group">
+                    <label for="title">제목</label>
+                    <input type="text" id="title" name="title" required placeholder="제목을 입력하세요">
+                </div>
+                
+                <div class="form-group">
+                    <label for="content">내용</label>
+                    <textarea id="content" name="content" required placeholder="학습한 내용을 작성하세요"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">날짜</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="hashtags">해시태그</label>
+                    <input type="text" id="hashtags" name="hashtags" placeholder="해시태그를 쉼표로 구분하여 입력하세요 (예: javascript, react, css)">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closePostModal()">취소</button>
+                    <button type="submit" class="submit-btn">업로드</button>
+                </div>
+            </form>
         </div>
-    </main>
-
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Today I Learned. 매일매일 배우는 것을 기록합니다.</p>
-        </div>
-    </footer>
+    </div>
 
     <script src="script.js"></script>
 </body>
