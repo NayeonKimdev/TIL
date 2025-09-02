@@ -602,10 +602,18 @@ function renderPosts() {
 
 // 포스트 HTML 생성
 function createPostHTML(post) {
-    const hashtagsHTML = post.hashtags.length > 0 
+    // post 객체 검증
+    if (!post || typeof post !== 'object') {
+        console.error('잘못된 포스트 객체:', post);
+        return '';
+    }
+    
+    // hashtags 배열 검증
+    const postHashtags = Array.isArray(post.hashtags) ? post.hashtags : [];
+    const hashtagsHTML = postHashtags.length > 0 
         ? `
             <div class="post-hashtags">
-                ${post.hashtags.map(tag => `
+                ${postHashtags.map(tag => `
                     <span class="post-hashtag">#${tag}</span>
                 `).join('')}
             </div>
@@ -618,10 +626,12 @@ function createPostHTML(post) {
         </div>
     ` : '';
     
-    const imagesHTML = post.images.length > 0 
+    // images 배열 검증
+    const postImages = Array.isArray(post.images) ? post.images : [];
+    const imagesHTML = postImages.length > 0 
         ? `
             <div class="post-images">
-                ${post.images.map((img, index) => `
+                ${postImages.map((img, index) => `
                     <img src="${img.src}" alt="학습 이미지 ${index + 1}" class="post-image" 
                          data-index="${index}" data-description="${img.description || ''}">
                 `).join('')}
@@ -631,15 +641,15 @@ function createPostHTML(post) {
     return `
         <article class="post">
             <div class="post-header">
-                <h2 class="post-title">${post.title}</h2>
+                <h2 class="post-title">${post.title || '제목 없음'}</h2>
                 <div class="post-meta">
-                    <span class="post-date">${formatDate(post.date)}</span>
+                    <span class="post-date">${formatDate(post.date || new Date())}</span>
                 </div>
                 ${hashtagsHTML}
                 ${actionsHTML}
             </div>
             <div class="post-content">
-                <p class="post-description">${post.content}</p>
+                <p class="post-description">${post.content || '내용 없음'}</p>
                 ${imagesHTML}
             </div>
         </article>
@@ -945,6 +955,13 @@ function startEditPost(postId) {
         return;
     }
     
+    // posts 배열 검증
+    if (!Array.isArray(posts)) {
+        console.warn('posts가 배열이 아닙니다. 초기화합니다.');
+        posts = [];
+        return;
+    }
+    
     const post = posts.find(p => p.id === postId);
     if (!post) return;
     
@@ -953,17 +970,25 @@ function startEditPost(postId) {
     const dateInput = document.getElementById('date');
     const contentInput = document.getElementById('content');
     
-    if (titleInput) titleInput.value = post.title;
-    if (dateInput) dateInput.value = post.date;
-    if (contentInput) contentInput.value = post.content;
+    if (titleInput) titleInput.value = post.title || '';
+    if (dateInput) dateInput.value = post.date || '';
+    if (contentInput) contentInput.value = post.content || '';
     
-    hashtags = [...post.hashtags];
+    // hashtags 배열 검증
+    hashtags = Array.isArray(post.hashtags) ? [...post.hashtags] : [];
     renderHashtags();
     
-    // 이미지 채우기
-    uploadedImages = post.images.map(img => ({ src: img.src }));
+    // 이미지 채우기 (안전한 방식)
+    uploadedImages = [];
     imageDescriptions = {};
-    post.images.forEach((img, idx) => imageDescriptions[idx] = img.description || '');
+    
+    if (Array.isArray(post.images)) {
+        uploadedImages = post.images.map(img => ({ src: img.src || '' }));
+        post.images.forEach((img, idx) => {
+            imageDescriptions[idx] = img.description || '';
+        });
+    }
+    
     renderImagePreview();
     
     // 편집 모드 표시
@@ -979,6 +1004,13 @@ function startEditPost(postId) {
 function deletePost(postId) {
     if (!ownerMode) {
         showNotification('소유자 모드에서만 삭제할 수 있습니다', 'info');
+        return;
+    }
+    
+    // posts 배열 검증
+    if (!Array.isArray(posts)) {
+        console.warn('posts가 배열이 아닙니다. 초기화합니다.');
+        posts = [];
         return;
     }
     
