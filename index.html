@@ -17,14 +17,7 @@
                     Dev Knowledge Base
                 </h1>
                 <nav class="nav">
-                    <button class="nav-btn active" data-filter="all">전체</button>
-                    <button class="nav-btn" data-filter="javascript">JavaScript</button>
-                    <button class="nav-btn" data-filter="css">CSS</button>
-                    <button class="nav-btn" data-filter="html">HTML</button>
-                    <button class="nav-btn" data-filter="react">React</button>
-                    <button class="nav-btn" data-filter="nodejs">Node.js</button>
-                    <button class="nav-btn" data-filter="database">Database</button>
-                    <button class="nav-btn" data-filter="algorithm">Algorithm</button>
+                    <!-- 카테고리 필터는 나중에 구현 예정 -->
                 </nav>
                 <div class="header-actions">
                     <button class="search-btn" onclick="openSearchModal()">
@@ -33,9 +26,6 @@
                     <button class="write-btn" onclick="openWriteModal()">
                         <i class="fas fa-pen"></i>
                         글쓰기
-                    </button>
-                    <button class="clear-btn" onclick="clearAllPosts()" title="모든 포스트 삭제">
-                        <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
@@ -78,17 +68,15 @@
                         
                         <div class="form-group">
                             <label for="category">카테고리</label>
-                            <select id="category" name="category" required>
-                                <option value="">카테고리를 선택하세요</option>
-                                <option value="javascript">JavaScript</option>
-                                <option value="css">CSS</option>
-                                <option value="html">HTML</option>
-                                <option value="react">React</option>
-                                <option value="nodejs">Node.js</option>
-                                <option value="database">Database</option>
-                                <option value="algorithm">Algorithm</option>
-                                <option value="other">기타</option>
-                            </select>
+                            <div class="category-input-group">
+                                <input type="text" id="category" name="category" placeholder="새 카테고리를 입력하세요 (예: JavaScript, React, CSS 등)">
+                                <button type="button" class="add-category-btn" onclick="addCategory()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div id="categoryTags" class="category-tags">
+                                <!-- 추가된 카테고리 태그들이 여기에 표시됩니다 -->
+                            </div>
                         </div>
                         
                         <div class="form-group">
@@ -101,6 +89,10 @@
                                     <button type="button" class="add-text-btn" onclick="addTextBlock()">
                                         <i class="fas fa-font"></i>
                                         텍스트 추가
+                                    </button>
+                                    <button type="button" class="add-code-btn" onclick="addCodeBlock()">
+                                        <i class="fas fa-code"></i>
+                                        코드 추가
                                     </button>
                                     <button type="button" class="add-media-btn" onclick="addMediaBlock()">
                                         <i class="fas fa-image"></i>

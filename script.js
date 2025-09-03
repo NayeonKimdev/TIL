@@ -3,6 +3,7 @@ let posts = JSON.parse(localStorage.getItem('dev_posts')) || [];
 let currentFilter = 'all';
 let contentBlocks = [];
 let blockCounter = 0;
+let selectedCategories = []; // 선택된 카테고리들
 
 // DOM이 로드되면 실행
 document.addEventListener('DOMContentLoaded', function() {
@@ -88,7 +89,9 @@ function openWriteModal() {
         // 콘텐츠 블록 초기화
         contentBlocks = [];
         blockCounter = 0;
+        selectedCategories = [];
         renderContentBlocks();
+        renderCategoryTags();
         // 편집 모드로 시작
         showEditMode();
     }
@@ -188,6 +191,28 @@ function addMediaBlock() {
     renderContentBlocks();
 }
 
+// 코드 블록 추가
+function addCodeBlock() {
+    blockCounter++;
+    const newBlock = {
+        id: blockCounter,
+        type: 'code',
+        content: '',
+        language: 'javascript'
+    };
+    
+    contentBlocks.push(newBlock);
+    renderContentBlocks();
+    
+    // 새로 추가된 코드 블록에 포커스
+    setTimeout(() => {
+        const textarea = document.querySelector(`#block-${blockCounter} textarea`);
+        if (textarea) {
+            textarea.focus();
+        }
+    }, 100);
+}
+
 // 콘텐츠 블록 렌더링
 function renderContentBlocks() {
     const container = document.getElementById('contentBlocks');
@@ -212,8 +237,8 @@ function renderContentBlocks() {
 
 // 블록 HTML 생성
 function createBlockHTML(block, index) {
-    const blockType = block.type === 'text' ? '텍스트' : '미디어';
-    const blockIcon = block.type === 'text' ? 'fas fa-font' : 'fas fa-image';
+    const blockType = block.type === 'text' ? '텍스트' : block.type === 'code' ? '코드' : '미디어';
+    const blockIcon = block.type === 'text' ? 'fas fa-font' : block.type === 'code' ? 'fas fa-code' : 'fas fa-image';
     
     let blockContent = '';
     
@@ -223,6 +248,28 @@ function createBlockHTML(block, index) {
                 <textarea 
                     id="block-${block.id}" 
                     placeholder="텍스트를 입력하세요..."
+                    oninput="updateBlockContent(${block.id}, this.value)"
+                >${block.content || ''}</textarea>
+            </div>
+        `;
+    } else if (block.type === 'code') {
+        blockContent = `
+            <div class="code-block">
+                <div class="code-header">
+                    <select onchange="updateCodeLanguage(${block.id}, this.value)">
+                        <option value="javascript" ${block.language === 'javascript' ? 'selected' : ''}>JavaScript</option>
+                        <option value="html" ${block.language === 'html' ? 'selected' : ''}>HTML</option>
+                        <option value="css" ${block.language === 'css' ? 'selected' : ''}>CSS</option>
+                        <option value="python" ${block.language === 'python' ? 'selected' : ''}>Python</option>
+                        <option value="java" ${block.language === 'java' ? 'selected' : ''}>Java</option>
+                        <option value="cpp" ${block.language === 'cpp' ? 'selected' : ''}>C++</option>
+                        <option value="sql" ${block.language === 'sql' ? 'selected' : ''}>SQL</option>
+                        <option value="bash" ${block.language === 'bash' ? 'selected' : ''}>Bash</option>
+                    </select>
+                </div>
+                <textarea 
+                    id="block-${block.id}" 
+                    placeholder="코드를 입력하세요..."
                     oninput="updateBlockContent(${block.id}, this.value)"
                 >${block.content || ''}</textarea>
             </div>
@@ -283,6 +330,14 @@ function updateBlockContent(blockId, content) {
     const block = contentBlocks.find(b => b.id === blockId);
     if (block) {
         block.content = content;
+    }
+}
+
+// 코드 언어 업데이트
+function updateCodeLanguage(blockId, language) {
+    const block = contentBlocks.find(b => b.id === blockId);
+    if (block && block.type === 'code') {
+        block.language = language;
     }
 }
 
@@ -384,8 +439,7 @@ function renderPreview() {
     if (!container) return;
     
     const title = document.getElementById('title').value || '제목 없음';
-    const category = document.getElementById('category').value;
-    const categoryName = getCategoryName(category);
+    const categories = selectedCategories.length > 0 ? selectedCategories.join(', ') : '카테고리 없음';
     
     let blocksHTML = '';
     if (contentBlocks.length > 0) {
@@ -393,6 +447,13 @@ function renderPreview() {
             if (block.type === 'text') {
                 return `<div class="preview-block">
                     <div class="preview-block-text">${block.content.replace(/\n/g, '<br>')}</div>
+                </div>`;
+            } else if (block.type === 'code') {
+                return `<div class="preview-block">
+                    <div class="preview-block-code">
+                        <div class="code-language">${block.language || 'javascript'}</div>
+                        <pre><code>${block.content}</code></pre>
+                    </div>
                 </div>`;
             } else if (block.type === 'media' && block.content) {
                 if (block.content.type === 'image') {
@@ -415,7 +476,7 @@ function renderPreview() {
     
     container.innerHTML = `
         <div class="preview-title">${title}</div>
-        <div class="preview-category">${categoryName}</div>
+        <div class="preview-category">${categories}</div>
         <div class="preview-blocks">
             ${blocksHTML}
         </div>
@@ -430,12 +491,11 @@ function handleWriteSubmit(e) {
     try {
         const formData = new FormData(e.target);
         const title = formData.get('title').trim();
-        const category = formData.get('category');
         const hashtagsInput = formData.get('hashtags').trim();
         
         // 필수 필드 검증
-        if (!title || !category) {
-            showNotification('제목과 카테고리를 입력해주세요.', 'error');
+        if (!title) {
+            showNotification('제목을 입력해주세요.', 'error');
             return;
         }
         
@@ -454,7 +514,7 @@ function handleWriteSubmit(e) {
             id: Date.now(),
             title: title,
             content: contentBlocks.map(block => block.content).join('\n\n'), // 간단한 텍스트 요약
-            category: category,
+            categories: [...selectedCategories],
             date: new Date().toISOString().split('T')[0],
             hashtags: hashtags,
             blocks: [...contentBlocks]
@@ -547,13 +607,13 @@ function viewPost(postId) {
     }
 }
 
-// 모든 포스트 삭제
-function clearAllPosts() {
-    if (confirm('모든 포스트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-        posts = [];
+// 개별 포스트 삭제
+function deletePost(postId) {
+    if (confirm('이 글을 삭제하시겠습니까?')) {
+        posts = posts.filter(post => post.id !== postId);
         savePosts();
         renderPosts();
-        showNotification('모든 포스트가 삭제되었습니다.', 'success');
+        showNotification('글이 삭제되었습니다.', 'success');
     }
 }
 
@@ -587,23 +647,17 @@ function renderPosts() {
         return;
     }
     
-    // 필터링된 포스트 가져오기
-    let filteredPosts = posts;
-    if (currentFilter !== 'all') {
-        filteredPosts = posts.filter(post => post.category === currentFilter);
-    }
-    
-    if (filteredPosts.length === 0) {
+    if (posts.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
-                <h3>${currentFilter === 'all' ? '아직 작성된 글이 없습니다' : '해당 카테고리의 글이 없습니다'}</h3>
+                <h3>아직 작성된 글이 없습니다</h3>
                 <p>첫 번째 개발 상식을 작성해보세요!</p>
             </div>
         `;
         return;
     }
     
-    const postsHTML = filteredPosts.map(post => createPostHTML(post)).join('');
+    const postsHTML = posts.map(post => createPostHTML(post)).join('');
     container.innerHTML = postsHTML;
     
     console.log('포스트 렌더링 완료');
@@ -626,10 +680,22 @@ function createPostHTML(post) {
         const firstBlock = post.blocks[0];
         if (firstBlock.type === 'text') {
             contentPreview = firstBlock.content.substring(0, 100) + (firstBlock.content.length > 100 ? '...' : '');
+        } else if (firstBlock.type === 'code') {
+            contentPreview = '코드 블록';
         }
     } else {
         contentPreview = post.content.substring(0, 100) + (post.content.length > 100 ? '...' : '');
     }
+    
+    // 카테고리 표시
+    const categoriesHTML = post.categories && post.categories.length > 0 
+        ? `
+            <div class="post-categories">
+                ${post.categories.map(category => `
+                    <span class="post-category">${category}</span>
+                `).join('')}
+            </div>
+        ` : '';
     
     // 전체 콘텐츠 (숨겨진 상태)
     let fullContentHTML = '';
@@ -656,6 +722,13 @@ function createPostHTML(post) {
                                     </div>
                                 </div>`;
                             }
+                        } else if (block.type === 'code') {
+                            return `<div class="post-block">
+                                <div class="post-block-code">
+                                    <div class="code-language">${block.language || 'javascript'}</div>
+                                    <pre><code>${block.content}</code></pre>
+                                </div>
+                            </div>`;
                         }
                         return '';
                     }).join('')}
@@ -669,15 +742,20 @@ function createPostHTML(post) {
     return `
         <article class="post" data-post-id="${post.id}">
             <div class="post-header" onclick="togglePostContent(${post.id})" style="cursor: pointer;">
-                <div class="post-category">${getCategoryName(post.category)}</div>
+                ${categoriesHTML}
                 <h2 class="post-title">${post.title}</h2>
                 <div class="post-meta">
                     <div class="post-date">
                         <i class="fas fa-calendar"></i>
                         ${formatDate(post.date)}
                     </div>
-                    <div class="post-toggle">
-                        <i class="fas fa-chevron-down" id="toggle-icon-${post.id}"></i>
+                    <div class="post-actions">
+                        <button class="post-delete-btn" onclick="event.stopPropagation(); deletePost(${post.id})" title="글 삭제">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <div class="post-toggle">
+                            <i class="fas fa-chevron-down" id="toggle-icon-${post.id}"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -724,6 +802,56 @@ function savePosts() {
         console.error('포스트 저장 중 오류:', error);
         showNotification('저장 중 오류가 발생했습니다.', 'error');
     }
+}
+
+// 카테고리 추가
+function addCategory() {
+    const categoryInput = document.getElementById('category');
+    const category = categoryInput.value.trim();
+    
+    if (!category) {
+        showNotification('카테고리를 입력해주세요.', 'error');
+        return;
+    }
+    
+    if (selectedCategories.includes(category)) {
+        showNotification('이미 추가된 카테고리입니다.', 'error');
+        return;
+    }
+    
+    selectedCategories.push(category);
+    categoryInput.value = '';
+    renderCategoryTags();
+    showNotification(`카테고리 "${category}"가 추가되었습니다.`, 'success');
+}
+
+// 카테고리 태그 렌더링
+function renderCategoryTags() {
+    const container = document.getElementById('categoryTags');
+    if (!container) return;
+    
+    if (selectedCategories.length === 0) {
+        container.innerHTML = '<p class="no-categories">추가된 카테고리가 없습니다.</p>';
+        return;
+    }
+    
+    const tagsHTML = selectedCategories.map(category => `
+        <span class="category-tag">
+            ${category}
+            <button type="button" class="remove-category-btn" onclick="removeCategory('${category}')">
+                <i class="fas fa-times"></i>
+            </button>
+        </span>
+    `).join('');
+    
+    container.innerHTML = tagsHTML;
+}
+
+// 카테고리 제거
+function removeCategory(category) {
+    selectedCategories = selectedCategories.filter(cat => cat !== category);
+    renderCategoryTags();
+    showNotification(`카테고리 "${category}"가 제거되었습니다.`, 'success');
 }
 
 // 알림 표시

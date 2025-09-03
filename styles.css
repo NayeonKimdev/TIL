@@ -83,7 +83,7 @@ body {
     align-items: center;
 }
 
-.search-btn, .write-btn, .clear-btn {
+.search-btn, .write-btn {
     background: #333;
     color: #e0e0e0;
     border: none;
@@ -97,27 +97,8 @@ body {
     font-size: 0.9rem;
 }
 
-.search-btn:hover, .write-btn:hover, .clear-btn:hover {
+.search-btn:hover, .write-btn:hover {
     background: #444;
-}
-
-.write-btn {
-    background: #00d4ff;
-    color: #000;
-    font-weight: 600;
-}
-
-.write-btn:hover {
-    background: #00b8e6;
-}
-
-.clear-btn {
-    background: #ff4757;
-    color: #fff;
-}
-
-.clear-btn:hover {
-    background: #ff3742;
 }
 
 /* 메인 콘텐츠 */
@@ -222,6 +203,218 @@ body {
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid #333;
+}
+
+.post-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.post-delete-btn {
+    background: #ff4757;
+    color: #fff;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.post-delete-btn:hover {
+    background: #ff3742;
+}
+
+.post-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.post-category {
+    background: #00d4ff;
+    color: #000;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.category-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.category-input-group input {
+    flex: 1;
+}
+
+.add-category-btn {
+    background: #00d4ff;
+    color: #000;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+}
+
+.add-category-btn:hover {
+    background: #00b8e6;
+}
+
+.category-tags {
+    margin-top: 0.5rem;
+}
+
+.category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #333;
+    color: #00d4ff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.remove-category-btn {
+    background: none;
+    border: none;
+    color: #ff4757;
+    cursor: pointer;
+    padding: 0.1rem;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.remove-category-btn:hover {
+    background: #ff4757;
+    color: #fff;
+}
+
+.no-categories {
+    color: #888;
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.add-code-btn {
+    background: #333;
+    color: #e0e0e0;
+    border: 1px solid #444;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.add-code-btn:hover {
+    background: #444;
+    border-color: #00d4ff;
+}
+
+.code-block {
+    position: relative;
+}
+
+.code-header {
+    margin-bottom: 0.5rem;
+}
+
+.code-header select {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #e0e0e0;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.code-block textarea {
+    width: 100%;
+    min-height: 150px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #e0e0e0;
+    padding: 0.75rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+}
+
+.code-block textarea:focus {
+    outline: none;
+    border-color: #00d4ff;
+}
+
+.post-block-code {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.code-language {
+    background: #333;
+    color: #00d4ff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+
+.post-block-code pre {
+    background: #0a0a0a;
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 0;
+}
+
+.post-block-code code {
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.preview-block-code {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.preview-block-code pre {
+    background: #0a0a0a;
+    border-radius: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 0;
+}
+
+.preview-block-code code {
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
 .post-content {
