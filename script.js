@@ -54,52 +54,10 @@ function setupEventListeners() {
 
 // 샘플 데이터 추가
 function addSampleData() {
-    const samplePosts = [
-        {
-            id: 1,
-            title: 'JavaScript의 클로저(Closure) 개념',
-            content: '클로저는 함수가 선언될 때의 렉시컬 환경을 기억하여, 함수가 스코프 밖에서 실행될 때도 그 스코프에 접근할 수 있게 해주는 개념입니다.',
-            category: 'javascript',
-            date: '2024-01-15',
-            hashtags: ['javascript', 'closure', 'scope', 'lexical'],
-            blocks: [
-                {
-                    id: 1,
-                    type: 'text',
-                    content: '클로저는 함수가 선언될 때의 렉시컬 환경을 기억하여, 함수가 스코프 밖에서 실행될 때도 그 스코프에 접근할 수 있게 해주는 개념입니다. 이를 통해 데이터 은닉과 상태 관리가 가능합니다.'
-                },
-                {
-                    id: 2,
-                    type: 'text',
-                    content: '클로저의 주요 특징:\n1. 함수가 선언된 환경을 기억\n2. 외부 변수에 접근 가능\n3. 데이터 은닉과 캡슐화\n4. 상태 관리에 유용'
-                }
-            ]
-        },
-        {
-            id: 2,
-            title: 'CSS Grid vs Flexbox 언제 사용할까?',
-            content: 'Flexbox는 1차원 레이아웃(행 또는 열)에 적합하고, Grid는 2차원 레이아웃(행과 열 동시)에 적합합니다.',
-            category: 'css',
-            date: '2024-01-14',
-            hashtags: ['css', 'grid', 'flexbox', 'layout'],
-            blocks: [
-                {
-                    id: 1,
-                    type: 'text',
-                    content: 'Flexbox는 1차원 레이아웃(행 또는 열)에 적합하고, Grid는 2차원 레이아웃(행과 열 동시)에 적합합니다. 복잡한 레이아웃은 Grid를, 간단한 정렬은 Flexbox를 사용하는 것이 좋습니다.'
-                },
-                {
-                    id: 2,
-                    type: 'text',
-                    content: 'Flexbox 사용 시기:\n- 한 방향으로의 정렬\n- 간단한 레이아웃\n- 동적 콘텐츠\n\nGrid 사용 시기:\n- 복잡한 2차원 레이아웃\n- 고정된 레이아웃\n- 격자 형태의 배치'
-                }
-            ]
-        }
-    ];
-    
-    posts = samplePosts;
+    // 샘플 데이터를 추가하지 않음 - 빈 배열로 시작
+    posts = [];
     savePosts();
-    console.log('샘플 데이터 추가 완료');
+    console.log('빈 배열로 초기화 완료');
 }
 
 // 필터 클릭 처리
@@ -589,6 +547,36 @@ function viewPost(postId) {
     }
 }
 
+// 모든 포스트 삭제
+function clearAllPosts() {
+    if (confirm('모든 포스트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+        posts = [];
+        savePosts();
+        renderPosts();
+        showNotification('모든 포스트가 삭제되었습니다.', 'success');
+    }
+}
+
+// 포스트 내용 토글
+function togglePostContent(postId) {
+    const post = document.querySelector(`[data-post-id="${postId}"]`);
+    const fullContent = post.querySelector('.post-full-content');
+    const preview = post.querySelector('.post-preview');
+    const toggleIcon = document.getElementById(`toggle-icon-${postId}`);
+    
+    if (fullContent.style.display === 'none') {
+        fullContent.style.display = 'block';
+        preview.style.display = 'none';
+        toggleIcon.classList.remove('fa-chevron-down');
+        toggleIcon.classList.add('fa-chevron-up');
+    } else {
+        fullContent.style.display = 'none';
+        preview.style.display = 'block';
+        toggleIcon.classList.remove('fa-chevron-up');
+        toggleIcon.classList.add('fa-chevron-down');
+    }
+}
+
 // 포스트 렌더링
 function renderPosts() {
     console.log('포스트 렌더링 시작');
@@ -632,43 +620,55 @@ function createPostHTML(post) {
             </div>
         ` : '';
     
-    // 블록 기반 콘텐츠 렌더링
-    let blocksHTML = '';
+    // 블록 기반 콘텐츠 렌더링 (축약된 버전)
+    let contentPreview = '';
     if (post.blocks && post.blocks.length > 0) {
-        blocksHTML = `
-            <div class="post-blocks">
-                ${post.blocks.map(block => {
-                    if (block.type === 'text') {
-                        return `<div class="post-block">
-                            <div class="post-block-text">${block.content.replace(/\n/g, '<br>')}</div>
-                        </div>`;
-                    } else if (block.type === 'media' && block.content) {
-                        if (block.content.type === 'image') {
+        const firstBlock = post.blocks[0];
+        if (firstBlock.type === 'text') {
+            contentPreview = firstBlock.content.substring(0, 100) + (firstBlock.content.length > 100 ? '...' : '');
+        }
+    } else {
+        contentPreview = post.content.substring(0, 100) + (post.content.length > 100 ? '...' : '');
+    }
+    
+    // 전체 콘텐츠 (숨겨진 상태)
+    let fullContentHTML = '';
+    if (post.blocks && post.blocks.length > 0) {
+        fullContentHTML = `
+            <div class="post-full-content" style="display: none;">
+                <div class="post-blocks">
+                    ${post.blocks.map(block => {
+                        if (block.type === 'text') {
                             return `<div class="post-block">
-                                <div class="post-block-media">
-                                    <img src="${block.content.src}" alt="${block.content.name}">
-                                </div>
+                                <div class="post-block-text">${block.content.replace(/\n/g, '<br>')}</div>
                             </div>`;
-                        } else {
-                            return `<div class="post-block">
-                                <div class="post-block-media">
-                                    <video src="${block.content.src}" controls></video>
-                                </div>
-                            </div>`;
+                        } else if (block.type === 'media' && block.content) {
+                            if (block.content.type === 'image') {
+                                return `<div class="post-block">
+                                    <div class="post-block-media">
+                                        <img src="${block.content.src}" alt="${block.content.name}">
+                                    </div>
+                                </div>`;
+                            } else {
+                                return `<div class="post-block">
+                                    <div class="post-block-media">
+                                        <video src="${block.content.src}" controls></video>
+                                    </div>
+                                </div>`;
+                            }
                         }
-                    }
-                    return '';
-                }).join('')}
+                        return '';
+                    }).join('')}
+                </div>
             </div>
         `;
     } else {
-        // 기존 콘텐츠 (하위 호환성)
-        blocksHTML = `<div class="post-content">${post.content}</div>`;
+        fullContentHTML = `<div class="post-full-content" style="display: none;"><div class="post-content">${post.content}</div></div>`;
     }
     
     return `
         <article class="post" data-post-id="${post.id}">
-            <div class="post-header">
+            <div class="post-header" onclick="togglePostContent(${post.id})" style="cursor: pointer;">
                 <div class="post-category">${getCategoryName(post.category)}</div>
                 <h2 class="post-title">${post.title}</h2>
                 <div class="post-meta">
@@ -676,9 +676,15 @@ function createPostHTML(post) {
                         <i class="fas fa-calendar"></i>
                         ${formatDate(post.date)}
                     </div>
+                    <div class="post-toggle">
+                        <i class="fas fa-chevron-down" id="toggle-icon-${post.id}"></i>
+                    </div>
                 </div>
             </div>
-            ${blocksHTML}
+            <div class="post-preview">
+                <div class="post-content-preview">${contentPreview}</div>
+            </div>
+            ${fullContentHTML}
             ${hashtagsHTML}
         </article>
     `;
